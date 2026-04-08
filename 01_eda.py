@@ -524,6 +524,40 @@ plt.tight_layout()
 plt.savefig("output/eda/06_delay_causes/seasonal_delay_causes.png")
 plt.close()
 
+
+#Visualization 6.35: Seasonal Composition of Delay Causes (Normalized Within Month)
+
+#Group by month and sum delay minutes
+seasonal_causes = delays.groupby('month')[[
+    'carrier_delay',
+    'weather_delay',
+    'nas_delay',
+    'security_delay',
+    'late_aircraft_delay'
+]].sum()
+
+#Convert to proportions (each month sums to 1)
+seasonal_share = seasonal_causes.div(seasonal_causes.sum(axis=1), axis=0)
+
+#Rename index for readability
+seasonal_share.index = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+#Visualization 6.35: Seasonal Composition of Delay Causes
+plt.figure(figsize=(10, 6))
+for col, label in zip(
+    seasonal_share.columns,
+    ['Carrier','Weather','NAS','Security','Late Aircraft']
+):
+    plt.plot(seasonal_share.index, seasonal_share[col], marker='o', label=label)
+plt.title("Seasonal Composition of Delay Causes (Proportion of Total Delays)")
+plt.xlabel("Month")
+plt.ylabel("Share of Total Delay")
+plt.legend()
+plt.tight_layout()
+plt.savefig("output/eda/06_delay_causes/seasonal_delay_composition.png")
+plt.close()
+
 #Visualization 6.4: Causes by Airlines
 
 #Aggregate delay causes by airline
