@@ -1,0 +1,4 @@
+airport,carrier,month,predicted_delay_probability,predicted_delay_if_delayed_minutes,predicted_most_likely_cause
+JFK,F9,1,0.26,75.6,carrier_delay
+MIA,AA,7,0.275,78.7,late_aircraft_delay
+ATL,DL,12,0.167,66.9,carrier_delay
