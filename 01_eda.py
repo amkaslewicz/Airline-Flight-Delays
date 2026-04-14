@@ -441,11 +441,51 @@ plt.tight_layout()
 plt.savefig("output/eda/05_seasonality/seasonal_flight_volume.png")
 plt.close()
 
+
 # =========================
 #EDA: 06 Delay Causes
 
+#IMPORTANT NOTE: This section uses TWO different ways of measuring delay causes
+# 1. Count-based measures (*_ct columns):
+# 2. Minutes-based measures (*_delay columns):
+
+#The weather variable is extreme weather only, weather is also partially captured in NAS delays
+
+#Sum total counts of delays by cause across the full dataset
+cause_counts = delays[[
+    'carrier_ct',
+    'weather_ct',
+    'nas_ct',
+    'security_ct',
+    'late_aircraft_ct'
+]].sum()
+
+#Rename for readability
+cause_counts.index = [
+    'Carrier Delay',
+    'Weather Delay',
+    'NAS Delay',
+    'Security Delay',
+    'Late Aircraft Delay'
+]
+
+#Convert to shares of total counted delays
+cause_count_share = cause_counts / cause_counts.sum()
+
+
+#Visualization 6.1A: Share of Delay Counts by Cause
+#Shows the proportion of all delay counts attributable to each cause
+plt.figure(figsize=(10, 6))
+cause_count_share.sort_values().plot(kind='barh')
+plt.title("Share of Delay Counts by Cause")
+plt.xlabel("Proportion of Total Delay Counts")
+plt.ylabel("Delay Cause")
+plt.tight_layout()
+plt.savefig("output/eda/06_delay_causes/delay_count_share_by_cause.png")
+plt.close()
+
 #Sum total delay minutes by cause across the full dataset
-delay_causes = delays[[
+delay_minutes = delays[[
     'carrier_delay',
     'weather_delay',
     'nas_delay',
@@ -453,8 +493,8 @@ delay_causes = delays[[
     'late_aircraft_delay'
 ]].sum()
 
-#Convert cause names into more readable labels for plotting
-delay_causes.index = [
+#Rename for readability
+delay_minutes.index = [
     'Carrier Delay',
     'Weather Delay',
     'NAS Delay',
@@ -462,73 +502,71 @@ delay_causes.index = [
     'Late Aircraft Delay'
 ]
 
-#Calculate each cause's share of total delay minutes
-delay_share = delay_causes / delay_causes.sum()
+#Convert to shares of total delay minutes
+delay_minute_share = delay_minutes / delay_minutes.sum()
 
-
-#Visualization 6.1: Total Delay Minutes by Cause
-#Shows which causes contribute the most total delay minutes
+#Visualization 6.1B: Share of Delay Minutes by Cause
+#Shows the proportion of overall delay minutes attributable to each cause
 plt.figure(figsize=(10, 6))
-delay_causes.sort_values().plot(kind='barh')
-plt.title("Total Delay Minutes by Cause")
-plt.xlabel("Total Delay Minutes")
+delay_minute_share.sort_values().plot(kind='barh')
+plt.title("Share of Total Delay Minutes by Cause")
+plt.xlabel("Proportion of Total Delay Minutes")
 plt.ylabel("Delay Cause")
 plt.tight_layout()
-plt.savefig("output/eda/06_delay_causes/total_delay_by_cause.png")
+plt.savefig("output/eda/06_delay_causes/delay_minute_share_by_cause.png")
 plt.close()
 
-#Visualization 6.2: Share of Total Delay by Cause
-#Shows the proportion of overall delay attributable to each cause
-plt.figure(figsize=(10, 6))
-delay_share.sort_values().plot(kind='barh')
-plt.title("Share of Total Delay by Cause")
-plt.xlabel("Proportion of Total Delay")
-plt.ylabel("Delay Cause")
-plt.tight_layout()
-plt.savefig("output/eda/06_delay_causes/delay_share_by_cause.png")
-plt.close()
 
-#Visualization 6.3: Seasonal Pattern of Delay Causes
-#Groups total delay minutes by month across all years
-seasonal_causes = delays.groupby('month')[[
-    'carrier_delay',
-    'weather_delay',
-    'nas_delay',
-    'security_delay',
-    'late_aircraft_delay'
+#SEASONAL CAUSE
+
+#Group by month and sum delay counts
+seasonal_cause_counts = delays.groupby('month')[[
+    'carrier_ct',
+    'weather_ct',
+    'nas_ct',
+    'security_ct',
+    'late_aircraft_ct'
 ]].sum()
 
-#Rename columns for readability
-seasonal_causes.columns = [
-    'Carrier Delay',
-    'Weather Delay',
-    'NAS Delay',
-    'Security Delay',
-    'Late Aircraft Delay'
+#Rename columns
+seasonal_cause_counts.columns = [
+    'Carrier',
+    'Weather',
+    'NAS',
+    'Security',
+    'Late Aircraft'
 ]
 
-#Replace month numbers with month abbreviations
-seasonal_causes.index = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                         'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+#Rename month index
+seasonal_cause_counts.index = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                               'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
-#Visualization 6.3: Seasonal Pattern of Delay Causes
-#Shows how different delay causes fluctuate across the year
+#Convert to within-month proportions
+seasonal_cause_count_share = seasonal_cause_counts.div(
+    seasonal_cause_counts.sum(axis=1),
+    axis=0
+)
+
+#Visualization 6.2A: Seasonal Composition of Delay Counts
+#Shows how the mix of causes changes throughout the year based on counts
 plt.figure(figsize=(10, 6))
-for cause in seasonal_causes.columns:
-    plt.plot(seasonal_causes.index, seasonal_causes[cause], marker='o', label=cause)
-plt.title("Seasonal Pattern of Delay Causes")
+for col in seasonal_cause_count_share.columns:
+    plt.plot(seasonal_cause_count_share.index,
+             seasonal_cause_count_share[col],
+             marker='o',
+             label=col)
+
+plt.title("Seasonal Composition of Delay Causes (Based on Counts)")
 plt.xlabel("Month")
-plt.ylabel("Total Delay Minutes")
+plt.ylabel("Share of Total Delay Counts")
 plt.legend()
 plt.tight_layout()
-plt.savefig("output/eda/06_delay_causes/seasonal_delay_causes.png")
+plt.savefig("output/eda/06_delay_causes/seasonal_delay_count_composition.png")
 plt.close()
 
-
-#Visualization 6.35: Seasonal Composition of Delay Causes (Normalized Within Month)
 
 #Group by month and sum delay minutes
-seasonal_causes = delays.groupby('month')[[
+seasonal_cause_minutes = delays.groupby('month')[[
     'carrier_delay',
     'weather_delay',
     'nas_delay',
@@ -536,71 +574,91 @@ seasonal_causes = delays.groupby('month')[[
     'late_aircraft_delay'
 ]].sum()
 
-#Convert to proportions (each month sums to 1)
-seasonal_share = seasonal_causes.div(seasonal_causes.sum(axis=1), axis=0)
+#Rename columns
+seasonal_cause_minutes.columns = [
+    'Carrier',
+    'Weather',
+    'NAS',
+    'Security',
+    'Late Aircraft'
+]
 
-#Rename index for readability
-seasonal_share.index = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+#Rename month index
+seasonal_cause_minutes.index = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                                'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
-#Visualization 6.35: Seasonal Composition of Delay Causes
+#Convert to within-month proportions
+seasonal_cause_minute_share = seasonal_cause_minutes.div(
+    seasonal_cause_minutes.sum(axis=1),
+    axis=0
+)
+
+#Visualization 6.2B: Seasonal Composition of Delay Causes
+#Shows how the mix of causes changes throughout the year based on minutes
 plt.figure(figsize=(10, 6))
-for col, label in zip(
-    seasonal_share.columns,
-    ['Carrier','Weather','NAS','Security','Late Aircraft']
-):
-    plt.plot(seasonal_share.index, seasonal_share[col], marker='o', label=label)
-plt.title("Seasonal Composition of Delay Causes (Proportion of Total Delays)")
+for col in seasonal_cause_minute_share.columns:
+    plt.plot(seasonal_cause_minute_share.index,
+             seasonal_cause_minute_share[col],
+             marker='o',
+             label=col)
+
+plt.title("Seasonal Composition of Delay Causes (Based on Minutes)")
 plt.xlabel("Month")
-plt.ylabel("Share of Total Delay")
+plt.ylabel("Share of Total Delay Minutes")
 plt.legend()
 plt.tight_layout()
-plt.savefig("output/eda/06_delay_causes/seasonal_delay_composition.png")
+plt.savefig("output/eda/06_delay_causes/seasonal_delay_minute_composition.png")
 plt.close()
 
-#Visualization 6.4: Causes by Airlines
 
-#Aggregate delay causes by airline
-airline_causes = delays.groupby('carrier').agg({
-    'carrier_delay': 'sum',
-    'weather_delay': 'sum',
-    'nas_delay': 'sum',
-    'security_delay': 'sum',
-    'late_aircraft_delay': 'sum',
+#AIRLINE COMPOSITION
+
+#Aggregate delay counts by airline
+airline_cause_counts = delays.groupby('carrier').agg({
+    'carrier_ct': 'sum',
+    'weather_ct': 'sum',
+    'nas_ct': 'sum',
+    'security_ct': 'sum',
+    'late_aircraft_ct': 'sum',
     'arr_flights': 'sum'
 })
 
-#Keep only top 10 airlines by volume
-top_airlines = airline_causes['arr_flights'].nlargest(10).index
-airline_causes = airline_causes.loc[top_airlines]
+#Keep top 10 airlines by flight volume
+top_airlines = airline_cause_counts['arr_flights'].nlargest(10).index
+airline_cause_counts = airline_cause_counts.loc[top_airlines]
 
-#Convert each airline's delay causes into proportions
-airline_cause_share = airline_causes.div(
-    airline_causes[['carrier_delay','weather_delay','nas_delay','security_delay','late_aircraft_delay']].sum(axis=1),
+#Convert to proportions
+airline_cause_count_share = airline_cause_counts[[
+    'carrier_ct',
+    'weather_ct',
+    'nas_ct',
+    'security_ct',
+    'late_aircraft_ct'
+]].div(
+    airline_cause_counts[[
+        'carrier_ct',
+        'weather_ct',
+        'nas_ct',
+        'security_ct',
+        'late_aircraft_ct'
+    ]].sum(axis=1),
     axis=0
 )
 
-#Visualization 6.4: Causes by Airlines (Stacked Bar)
+#Visualization 6.3A: Delay Cause Composition by Airline (Counts)
 plt.figure(figsize=(10, 6))
-airline_cause_share[[
-    'carrier_delay',
-    'weather_delay',
-    'nas_delay',
-    'security_delay',
-    'late_aircraft_delay'
-]].plot(kind='bar', stacked=True)
-plt.title("Delay Cause Composition by Airline")
+airline_cause_count_share.plot(kind='bar', stacked=True)
+plt.title("Delay Cause Composition by Airline (Based on Counts)")
 plt.xlabel("Airline")
-plt.ylabel("Proportion of Delay")
+plt.ylabel("Share of Total Delay Counts")
 plt.legend(title="Cause", bbox_to_anchor=(1.05, 1))
 plt.tight_layout()
-plt.savefig("output/eda/06_delay_causes/airline_delay_composition.png")
+plt.savefig("output/eda/06_delay_causes/airline_delay_count_composition.png")
 plt.close()
 
-#Visualization 6.5: Causes by Airport
 
-#Aggregate delay causes by airport
-airport_causes = delays.groupby('airport').agg({
+#Aggregate delay minutes by airline
+airline_cause_minutes = delays.groupby('carrier').agg({
     'carrier_delay': 'sum',
     'weather_delay': 'sum',
     'nas_delay': 'sum',
@@ -609,29 +667,219 @@ airport_causes = delays.groupby('airport').agg({
     'arr_flights': 'sum'
 })
 
-#Keep top 25 airports
-top_airports = airport_causes['arr_flights'].nlargest(25).index
-airport_causes = airport_causes.loc[top_airports]
+#Keep top 10 airlines by flight volume
+top_airlines = airline_cause_minutes['arr_flights'].nlargest(10).index
+airline_cause_minutes = airline_cause_minutes.loc[top_airlines]
 
-#Convert each airport's delay causes into proportions
-airport_cause_share = airport_causes.div(
-    airport_causes[['carrier_delay','weather_delay','nas_delay','security_delay','late_aircraft_delay']].sum(axis=1),
-    axis=0
-)
-
-#Visualization 6.5: Causes by Airport (Stacked Bar)
-plt.figure(figsize=(10, 6))
-airport_cause_share[[
+#Convert to proportions
+airline_cause_minute_share = airline_cause_minutes[[
     'carrier_delay',
     'weather_delay',
     'nas_delay',
     'security_delay',
     'late_aircraft_delay'
-]].plot(kind='bar', stacked=True)
-plt.title("Delay Cause Composition by Airport")
-plt.xlabel("Airport")
-plt.ylabel("Proportion of Delay")
+]].div(
+    airline_cause_minutes[[
+        'carrier_delay',
+        'weather_delay',
+        'nas_delay',
+        'security_delay',
+        'late_aircraft_delay'
+    ]].sum(axis=1),
+    axis=0
+)
+
+#Visualization 6.3B: Delay Cause Composition by Airline (Minutes)
+plt.figure(figsize=(10, 6))
+airline_cause_minute_share.plot(kind='bar', stacked=True)
+plt.title("Delay Cause Composition by Airline (Minutes)")
+plt.xlabel("Airline")
+plt.ylabel("Share of Total Delay Minutes")
 plt.legend(title="Cause", bbox_to_anchor=(1.05, 1))
 plt.tight_layout()
-plt.savefig("output/eda/06_delay_causes/airport_delay_composition.png")
+plt.savefig("output/eda/06_delay_causes/airline_delay_minute_composition.png")
+plt.close()
+
+# ============================================
+#WEATHER SCORE CONSTRUCTION
+
+#IMPORTANT CONTEXT:
+#The dataset separates delay causes into categories:
+#- weather_delay = extreme weather (direct)
+#- nas_delay = system delays (includes weather-related congestion)
+#According to DOT: ~45.8% of NAS delays are actually caused by weather
+#Therefore, to estimate TRUE weather impact, we adjust by incorporating part of NAS delays.
+
+
+#Adjusted weather delay (minutes)
+delays['weather_adjusted'] = (
+    delays['weather_delay'] +
+    0.458 * delays['nas_delay']
+)
+
+#Adjusted weather count (number of delayed flights)
+delays['weather_ct_adjusted'] = (
+    delays['weather_ct'] +
+    0.458 * delays['nas_ct']
+)
+
+
+#Create Core Weather Metric
+
+#Weather probability - how often weather causes delays
+delays['weather_prob'] = (
+    delays['weather_ct_adjusted'] /
+    delays['arr_flights'].replace(0, pd.NA)
+)
+
+#Weather severity - how much delay weather causes per flight
+delays['weather_per_flight'] = (
+    delays['weather_adjusted'] /
+    delays['arr_flights'].replace(0, pd.NA)
+)
+
+#Weather share - percent of total delay caused by weather
+delays['weather_share'] = (
+    delays['weather_adjusted'] /
+    delays['arr_delay'].replace(0, pd.NA)
+)
+
+
+#Clean division issues
+delays['weather_prob'] = delays['weather_prob'].fillna(0)
+delays['weather_per_flight'] = delays['weather_per_flight'].fillna(0)
+delays['weather_share'] = delays['weather_share'].fillna(0)
+
+
+#Create combined weather score
+
+#Standardize variables so they are comparable
+weather_prob_std = (
+    (delays['weather_prob'] - delays['weather_prob'].mean()) /
+    delays['weather_prob'].std()
+)
+
+weather_severity_std = (
+    (delays['weather_per_flight'] - delays['weather_per_flight'].mean()) /
+    delays['weather_per_flight'].std()
+)
+
+#Combine into one metric (equal weighting)
+delays['weather_score'] = (
+    0.5 * weather_prob_std +
+    0.5 * weather_severity_std
+)
+
+
+#Raw vs Adjuster Weather Share
+raw_weather = delays['weather_delay'].sum()
+adjusted_weather = delays['weather_adjusted'].sum()
+total_delay = delays['arr_delay'].sum()
+
+print("\nWeather Share Comparison:")
+print("Raw weather share:", round(raw_weather / total_delay, 3))
+print("Adjusted weather share:", round(adjusted_weather / total_delay, 3))
+
+
+
+#Visualization 6.4: Weather Score By Month
+#Which months are most impacted by weather
+weather_monthly = delays.groupby('month')['weather_score'].mean()
+
+weather_monthly.index = ['Jan','Feb','Mar','Apr','May','Jun',
+                        'Jul','Aug','Sep','Oct','Nov','Dec']
+
+plt.figure()
+weather_monthly.plot(marker='o')
+plt.title("Weather Disruption Score by Month (Frequency + Severity)")
+plt.xlabel("Month")
+plt.ylabel("Weather Score (Standardized)")
+plt.xticks(range(len(weather_monthly.index)), weather_monthly.index)
+plt.tight_layout()
+plt.savefig("output/eda/06_delay_causes/weather_score_monthly.png")
+plt.close()
+
+
+#Visualization 6.5: Weather Hotsports (Airports)
+
+weather_airport = delays.groupby('airport').agg({
+    'weather_adjusted': 'sum',
+    'weather_ct_adjusted': 'sum',
+    'arr_flights': 'sum'
+})
+
+#Normalize
+weather_airport['weather_per_flight'] = (
+    weather_airport['weather_adjusted'] /
+    weather_airport['arr_flights']
+)
+
+weather_airport['weather_prob'] = (
+    weather_airport['weather_ct_adjusted'] /
+    weather_airport['arr_flights']
+)
+
+#Filter small airports to avoid noise
+weather_airport = weather_airport[weather_airport['arr_flights'] >= 5000]
+
+#Top 20 weather-heavy airports
+top_weather = weather_airport['weather_per_flight'].nlargest(20)
+plt.figure(figsize=(10,8))
+top_weather.sort_values().plot(kind='barh')
+plt.title("Airports with Highest Weather Delay per Flight")
+plt.xlabel("Minutes per Flight")
+plt.ylabel("Airport")
+plt.tight_layout()
+plt.savefig("output/eda/06_delay_causes/weather_airports.png")
+plt.close()
+
+
+#Visualization 6.6: Stacked Bar With Adjusted Weather
+
+#Remaining NAS after removing weather portion
+delays['nas_remaining'] = (
+    delays['nas_delay'] * (1 - 0.458)
+)
+
+#Aggregate by month
+adjusted_causes = delays.groupby('month').agg({
+    'carrier_delay': 'sum',
+    'weather_adjusted': 'sum',
+    'nas_remaining': 'sum',
+    'security_delay': 'sum',
+    'late_aircraft_delay': 'sum'
+})
+
+#Rename columns for readability
+adjusted_causes.columns = [
+    'Carrier',
+    'Weather (Adjusted)',
+    'NAS (Non-Weather)',
+    'Security',
+    'Late Aircraft'
+]
+
+
+#Replace month index
+adjusted_causes.index = ['Jan','Feb','Mar','Apr','May','Jun',
+                        'Jul','Aug','Sep','Oct','Nov','Dec']
+
+#Convert to proportions (STACKED SHARE)
+adjusted_share = adjusted_causes.div(
+    adjusted_causes.sum(axis=1),
+    axis=0
+)
+
+#Plot stacked bar
+plt.figure(figsize=(12, 6))
+adjusted_share.plot(
+    kind='bar',
+    stacked=True
+)
+plt.title("Delay Cause Composition (Weather Adjusted)")
+plt.xlabel("Month")
+plt.ylabel("Share of Total Delay Minutes")
+plt.legend(title="Cause", bbox_to_anchor=(1.05, 1))
+plt.tight_layout()
+plt.savefig("output/eda/06_delay_causes/adjusted_weather_stacked.png")
 plt.close()
