@@ -64,7 +64,7 @@ delays['dominant_cause'] = delays[[
 
 
 
-# Build feature matrix and target variables
+#Build feature matrix and target variables
 
 #Select input features
 features = ['airport', 'carrier', 'month']
@@ -107,7 +107,7 @@ model_cause = RandomForestClassifier(n_estimators=100, random_state=42)
 model_cause.fit(X_train, y_cause_train)
 
 
-# Evaluate models
+#Evaluate models
 
 #Predict on test set
 y_prob_pred = model_prob.predict(X_test)
