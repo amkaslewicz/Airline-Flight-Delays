@@ -201,3 +201,50 @@ airport_map = airport_full.merge(
 #Export map-ready file
 airport_map.to_csv("output/mapping/airport_map_data.csv", index=False)
 
+
+# --------------------------------------------
+#Seasonal Maps
+#Create a season variable from month
+
+#Function to assign seasons based on month
+def get_season(month):
+    if month in [12, 1, 2]:
+        return "Winter"   # Dec–Feb
+    elif month in [3, 4, 5]:
+        return "Spring"   # Mar–May
+    elif month in [6, 7, 8]:
+        return "Summer"   # Jun–Aug
+    else:
+        return "Fall"     # Sep–Nov
+
+#Apply function to create new column
+delays['season'] = delays['month'].apply(get_season)
+
+#Group by both airport and season
+seasonal_airport = delays.groupby(['airport', 'season']).agg({
+    'arr_flights': 'sum',        # total flights in that season
+    'arr_delay': 'sum',          # total delay minutes
+    'weather_adjusted': 'sum'    # adjusted weather delay minutes
+}).reset_index()
+
+#Weather share = proportion of delay minutes caused by weather
+seasonal_airport['weather_share_adjusted'] = (
+    seasonal_airport['weather_adjusted'] /
+    seasonal_airport['arr_delay'].replace(0, pd.NA)
+)
+
+#Replace missing values
+seasonal_airport['weather_share_adjusted'] = seasonal_airport['weather_share_adjusted'].fillna(0)
+
+#Merge with airport coordinates
+seasonal_map = seasonal_airport.merge(
+    airports,
+    left_on='airport',     # from delays dataset
+    right_on='iata_code',  # from airport dataset
+    how='inner'
+)
+
+#Export for QGIS
+seasonal_map.to_csv("output/mapping/seasonal_weather_map.csv", index=False)
+
+
