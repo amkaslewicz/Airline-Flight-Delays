@@ -1,7 +1,8 @@
 Model Performance
 -----------------
-Delay probability RMSE: 0.1128
-Delay probability R^2: 0.1078
-Delay severity RMSE: 41.4129
-Delay severity R^2: 0.0577
-Cause classification accuracy: 0.5565
+Test year: 2025
+Delay probability RMSE: 0.1152
+Delay probability R^2: -0.0417
+Delay severity RMSE: 30.1652
+Delay severity R^2: 0.0600
+Cause classification accuracy: 0.6460
