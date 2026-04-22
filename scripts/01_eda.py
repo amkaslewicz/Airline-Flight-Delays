@@ -124,6 +124,67 @@ plt.tight_layout()
 plt.savefig("output/eda/01_overview/avg_delay_minutes.png")
 plt.close()
 
+#Visualization 1.4: Delay Share by Year (STACKED)
+#Shows proportion of delayed vs on-time flights across years 
+
+#Group by year
+yearly = delays.groupby('year').agg({
+    'arr_flights': 'sum',
+    'arr_del15': 'sum'
+})
+
+#Calculate shares
+yearly['delay_rate'] = yearly['arr_del15'] / yearly['arr_flights']
+yearly['on_time_rate'] = 1 - yearly['delay_rate']
+
+ON_TIME_COLOR = "#A7BBC7"
+DELAY_COLOR = "#E76F51"
+
+fig, ax = plt.subplots(figsize=(8, 5))
+
+ax.bar(
+    yearly.index,
+    yearly['on_time_rate'],
+    width=0.8,
+    color=ON_TIME_COLOR,
+    label='On-Time (<15 min)'
+)
+
+ax.bar(
+    yearly.index,
+    yearly['delay_rate'],
+    bottom=yearly['on_time_rate'],
+    width=0.8,
+    color=DELAY_COLOR,
+    label='Delayed (15+ min)'
+)
+
+#Label delayed portion
+for year, on_time, delay in zip(yearly.index, yearly['on_time_rate'], yearly['delay_rate']):
+    ax.text(
+        year,
+        on_time + delay / 2,
+        f"{delay:.0%}",
+        ha='center',
+        va='center',
+        fontsize=10,
+        fontweight='bold',
+        color='white'
+    )
+
+ax.set_ylim(0, 1)
+ax.set_yticks([0, 0.2, 0.4, 0.6, 0.8, 1.0])
+ax.set_yticklabels(['0%', '20%', '40%', '60%', '80%', '100%'])
+ax.set_title("Share of Flights Delayed by Year", fontsize=14, weight='bold')
+ax.set_xlabel("")
+ax.set_ylabel("")
+ax.spines[['top', 'right', 'left']].set_visible(False)
+ax.tick_params(axis='y', length=0)
+ax.legend(frameon=False)
+plt.tight_layout()
+plt.savefig("output/eda/01_overview/delay_share_by_year.png")
+plt.close()
+
 # =========================
 #EDA: 02 Distributions 
 
@@ -882,4 +943,76 @@ plt.ylabel("Share of Total Delay Minutes")
 plt.legend(title="Cause", bbox_to_anchor=(1.05, 1))
 plt.tight_layout()
 plt.savefig("output/eda/06_delay_causes/adjusted_weather_stacked.png")
+plt.close()
+
+
+#Visualization 6.7 - Presentation Graph: Adjusted Proportion of Delayed Flights by Cause
+
+#Adjust weather counts to include the weather-related share of NAS delay counts
+delays['weather_ct_adjusted'] = (
+    delays['weather_ct'] + 0.458 * delays['nas_ct']
+)
+
+#Remaining NAS counts after removing weather portion
+delays['nas_ct_remaining'] = (
+    delays['nas_ct'] * (1 - 0.458)
+)
+
+#Aggregate adjusted delay counts
+adjusted_delay_counts = pd.Series({
+    'Carrier': delays['carrier_ct'].sum(),
+    'Weather (Adjusted)': delays['weather_ct_adjusted'].sum(),
+    'NAS (Non-Weather)': delays['nas_ct_remaining'].sum(),
+    'Security': delays['security_ct'].sum(),
+    'Late Aircraft': delays['late_aircraft_ct'].sum()
+})
+
+#Convert to shares
+adjusted_count_share = adjusted_delay_counts / adjusted_delay_counts.sum()
+
+#Sort for plotting
+adjusted_count_share = adjusted_count_share.sort_values()
+
+#Colors
+colors = {
+    'Security': '#BDBDBD',
+    'Weather (Adjusted)': '#E76F51',
+    'NAS (Non-Weather)': '#6D597A',
+    'Carrier': '#A7BBC7',
+    'Late Aircraft': '#457B9D'
+}
+
+bar_colors = [colors[cause] for cause in adjusted_count_share.index]
+
+#Plot
+plt.figure(figsize=(8, 5))
+bars = plt.barh(
+    adjusted_count_share.index,
+    adjusted_count_share.values,
+    color=bar_colors
+)
+
+#Add labels
+for bar, value in zip(bars, adjusted_count_share.values):
+    plt.text(
+        value + 0.005,
+        bar.get_y() + bar.get_height() / 2,
+        f"{value:.0%}",
+        va='center',
+        fontsize=10
+    )
+
+plt.title("Proportion of Delays by Cause", fontsize=14, weight='bold')
+plt.xlabel("Share of Delayed Flights")
+plt.ylabel("")
+plt.xlim(0, adjusted_count_share.max() + 0.08)
+plt.xticks(
+    [0, 0.1, 0.2, 0.3, 0.4],
+    ['0%', '10%', '20%', '30%', '40%']
+)
+ax = plt.gca()
+ax.spines[['top', 'right', 'left']].set_visible(False)
+ax.tick_params(axis='y', length=0)
+plt.tight_layout()
+plt.savefig("output/eda/06_delay_causes/adjusted_delay_count_share_presentation.png")
 plt.close()
