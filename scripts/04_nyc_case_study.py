@@ -197,7 +197,7 @@ plt.plot(
     markersize=7
 )
 
-plt.title("Weather Delay Severity Over Time", fontsize=18)
+plt.title("Weather Delay Severity Over Time (75th Percentile)", fontsize=18)
 plt.xlabel("Year", fontsize=13)
 plt.ylabel("Delay Minutes (75th Percentile)", fontsize=13)
 
@@ -210,7 +210,7 @@ plt.savefig("output/nyc_case_study/nyc_weather_severity_distribution.png")
 plt.close()
 
 
-#Visualization 4: Share of severe weather delay months
+#Visualization 4: Share of extreme weather delay months
 
 severe_trend = nyc_monthly.groupby("year")["severe_event"].mean()
 
@@ -222,7 +222,7 @@ plt.plot(
     linewidth=2,
     markersize=7
 )
-plt.title("Frequency of Severe Weather Delay Months", fontsize=18)
+plt.title("Frequency of Extreme Weather Delay Months", fontsize=18)
 plt.xlabel("Year", fontsize=13)
 plt.ylabel("Share of Airport-Months", fontsize=13)
 years_to_show = severe_trend.index[::2]
