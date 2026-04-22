@@ -176,17 +176,22 @@ This also suggests a growing race between improving aviation technology and incr
 
 ### Predictive Modeling
 
-The predictive models developed in this project show limited ability to explain or forecast delays:
+The predictive models developed in this project were evaluated using 2025 as a holdout test year.
 
-- Delay probability R²: 0.1078  
-- Delay severity R²: 0.0577  
-- Cause classification accuracy: 0.5565  
+**Model Performance:**
+- Delay probability RMSE: 0.1152  
+- Delay probability R²: -0.0417  
+- Delay severity RMSE: 30.1652  
+- Delay severity R²: 0.0600  
+- Cause classification accuracy: 0.6460  
 
 These results indicate that:
-- A large portion of delay variation is unexplained by observable variables
-- Delay severity is highly unpredictable
-- Delay causes are difficult to classify accurately
 
+- Delay probability is difficult to predict and performs worse than a simple baseline (negative R²), suggesting that key drivers of whether a delay occurs are not fully captured in the available features.  
+- Delay severity shows slightly better performance, but remains largely unexplained, reflecting the high variability of extreme delay events.  
+- Cause classification performs moderately well, indicating some ability to distinguish between types of delays, though substantial overlap remains.  
+
+Overall, the results reinforce that flight delays are influenced by complex, system-level interactions that are not easily captured using limited observable variables such as airport, carrier, and month. This highlights the inherent unpredictability of delays, particularly for high-impact events.
 
 ### Overall Conclusion
 
